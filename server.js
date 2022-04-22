@@ -5,6 +5,7 @@ if (process.env.NODE_ENV !== 'production') {
 const express = require('express');
 const app = express();
 const usersRouter = require('./routes/users');
+const monitorsRouter = require('./routes/monitors');
 const mongoose = require('mongoose');
 const session = require('express-session');
 const bodyParser = require('body-parser');
@@ -45,14 +46,15 @@ passport.deserializeUser(function(id, done) {
 // Routes
 app.get('/', (req, res) => {
     if (req.isAuthenticated()) {
-        return res.send(`Welcome ${req.user.name}`);
+        res.send(`Welcome ${req.user.name}`);
     }
     else {
-        return res.send('Not welcome!');
+        res.send('Welcome to Url Monitor');
     }
     
 });
 app.use('/users', usersRouter);
+app.use('/monitors', userController.isLoggedIn, monitorsRouter);
 
 app.listen(port, () => {
     console.log(`Listening on port ${port}`)
