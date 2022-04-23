@@ -3,14 +3,19 @@ const mongoose = require('mongoose');
 const Monitor = require('../models/monitors')
 
 exports.getMonitor = async (req, res) => {
-    Monitor.findOne({_id: req.id}, (err, monitor) => {
-        if (err) {
-            res.status(400).send();
-        }
-        else {
-            res.send(monitor);
-        }
-    });
+    // TODO: Catch id from url
+    const isUserOwner = await isOwner(req);
+    if (isUserOwner === false) {
+        return res.status(401).send();
+    }
+    
+    try {
+        const monitor = await Monitor.findOne({_id: req.body.id});
+        res.send(monitor);
+    } 
+    catch (err) {
+        res.status(400).send();
+    }
 }
 
 exports.addMonitor = (req, res) => {
@@ -25,8 +30,11 @@ exports.addMonitor = (req, res) => {
     })
 }
 
-exports.updateMonitor = (req, res) => {
-    // TODO: Ensure user is monitor owner
+exports.updateMonitor = async (req, res) => {
+    const isUserOwner = await isOwner(req);
+    if (isUserOwner === false) {
+        return res.status(401).send();
+    }
     Monitor.updateOne({_id: req.body.id},{$set: req.body}, (err, monitor) => {
         if (err) {
             res.status(400).send(err);
@@ -37,6 +45,33 @@ exports.updateMonitor = (req, res) => {
     })
 }
 
-exports.deleteMonitor = (req, res) => {
+exports.deleteMonitor = async (req, res) => {
+    const isUserOwner = await isOwner(req);
+    if (isUserOwner === false) {
+        return res.status(401).send();
+    }
+    Monitor.deleteOne({_id: req.body.id}, (err) => {
+        if (err) {
+            res.status(400).send(err);
+        }
+        else {
+            res.status(204).send();
+        }
+    })
+}
 
+async function isOwner(req) {
+    return new Promise(resolve => {
+        Monitor.findOne({_id: req.body.id}, (err, monitor) => {
+            if (err) {
+                resolve(true);
+            }
+            else if (monitor.owner.toString() === req.user.id) {
+                resolve(true);
+            }
+            else {
+                resolve(false);
+            }
+        })
+    })
 }
