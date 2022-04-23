@@ -3,14 +3,13 @@ const mongoose = require('mongoose');
 const Monitor = require('../models/monitors')
 
 exports.getMonitor = async (req, res) => {
-    // TODO: Catch id from url
     const isUserOwner = await isOwner(req);
     if (isUserOwner === false) {
         return res.status(401).send();
     }
     
     try {
-        const monitor = await Monitor.findOne({_id: req.body.id});
+        const monitor = await Monitor.findOne({_id: req.params.id});
         res.send(monitor);
     } 
     catch (err) {
@@ -35,7 +34,7 @@ exports.updateMonitor = async (req, res) => {
     if (isUserOwner === false) {
         return res.status(401).send();
     }
-    Monitor.updateOne({_id: req.body.id},{$set: req.body}, (err, monitor) => {
+    Monitor.updateOne({_id: req.params.id},{$set: req.body}, (err, monitor) => {
         if (err) {
             res.status(400).send(err);
         }
@@ -50,7 +49,7 @@ exports.deleteMonitor = async (req, res) => {
     if (isUserOwner === false) {
         return res.status(401).send();
     }
-    Monitor.deleteOne({_id: req.body.id}, (err) => {
+    Monitor.deleteOne({_id: req.params.id}, (err) => {
         if (err) {
             res.status(400).send(err);
         }
@@ -62,7 +61,7 @@ exports.deleteMonitor = async (req, res) => {
 
 async function isOwner(req) {
     return new Promise(resolve => {
-        Monitor.findOne({_id: req.body.id}, (err, monitor) => {
+        Monitor.findOne({_id: req.params.id}, (err, monitor) => {
             if (err) {
                 resolve(true);
             }
