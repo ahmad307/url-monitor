@@ -1,6 +1,10 @@
 const mongoose = require('mongoose');
 
 const requestSchema = mongoose.Schema({
+    date: {
+        type: Date,
+        default: Date.now
+    },
     httpStatus: {
         type: Number,
         required: true
@@ -14,7 +18,6 @@ const requestSchema = mongoose.Schema({
     },
     result: {
         type: Object,
-        required: true
     }
 })
 

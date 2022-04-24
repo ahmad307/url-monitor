@@ -1,8 +1,5 @@
 const mongoose = require('mongoose');
 
-// Attrs[owner, name, url, protocol,
-//       path, backlog, uptime, downtime, creationDate, requestInterval
-//       requestTimeout, outages, state, webhook, alertsThrehold, tag]
 const monitorSchema = mongoose.Schema({
     owner: {
         type: mongoose.Schema.Types.ObjectId,
@@ -31,7 +28,7 @@ const monitorSchema = mongoose.Schema({
     }],
     // Optional
     upTime: {
-        // Saves seconds elapsed
+        // Saved in seconds
         type: Number,
         default: 0
     },
@@ -81,7 +78,6 @@ const monitorSchema = mongoose.Schema({
     },
 })
 
-// TODO: Update url regex to handle no protocol
 monitorSchema.path('url').validate((val) => {
     urlRegex = /(ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-/]))?/;
     return urlRegex.test(val);
@@ -91,5 +87,9 @@ monitorSchema.path('webhook').validate((val) => {
     urlRegex = /(ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-/]))?/;
     return urlRegex.test(val);
 }, 'Invalid Url');
+
+monitorSchema.path('path').validate((val) => {
+    return val[0] === '/';
+}, 'Path must start with /');
 
 module.exports = mongoose.model('Monitor', monitorSchema);
