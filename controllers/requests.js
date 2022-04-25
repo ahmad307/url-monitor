@@ -2,7 +2,9 @@ const cron = require('node-cron');
 const axios = require('axios');
 const http = require('http');
 const https = require('https');
+const nodemailer = require('nodemailer');
 const Monitor = require('../models/monitors');
+const User = require('../models/users');
 
 exports.callMakeRequest = async (req, res) => {
     await this.handleRequest(req.query.id);
@@ -43,7 +45,11 @@ exports.handleRequest = async (id) => {
         this.handleRequest(monitor._id);
     })
 
-    // TODO: Alert user if threshold exceeded
+    // Alert user if threshold exceeded
+    if (monitor.outages >= monitor.alertsThreshold) {
+        const user = await User.findOne({_id: monitor.owner});
+        sendEmail('ahmad.hussain.307@gmail.com', `Your url monitor of id ${monitor._id} is down`);
+    }
 }
 
 exports.sendRequest = async (monitor) => {
@@ -108,6 +114,7 @@ exports.sendRequest = async (monitor) => {
         request.urlState = 'down';
     }
     
+    console.log(`Request completed in ${responseTime} time.`)
     return request;
 }
 
@@ -122,3 +129,28 @@ function dateToCron(date) {
 
     return `${seconds} ${minutes} ${hours} ${days} ${months} ${dayOfWeek} ${year}`;
 };
+
+function sendEmail(email, body) {
+    var transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+          user: process.env.EMAIL,
+          pass: process.env.EMAIL_PASSWORD
+        }
+    });
+    
+    var mailOptions = {
+        from: process.env.EMAIL,
+        to: email,
+        subject: 'Url Monitor Alert',
+        text: body
+    };
+    
+    transporter.sendMail(mailOptions, function(error, info) {
+        if (error) {
+            console.log(error);
+        } else {
+            console.log('Email sent: ' + info.response);
+        }
+    }); 
+}
