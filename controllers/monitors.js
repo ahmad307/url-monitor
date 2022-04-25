@@ -1,9 +1,7 @@
-const express = require('express');
-const mongoose = require('mongoose');
 const Monitor = require('../models/monitors')
 
 exports.getMonitor = async (req, res) => {
-    const isUserOwner = await isOwner(req);
+    const isUserOwner = await isOwner(req.user, req.params.id);
     if (isUserOwner === false) {
         return res.status(401).send();
     }
@@ -30,7 +28,7 @@ exports.addMonitor = (req, res) => {
 }
 
 exports.updateMonitor = async (req, res) => {
-    const isUserOwner = await isOwner(req);
+    const isUserOwner = await isOwner(req.user, req.params.id);
     if (isUserOwner === false) {
         return res.status(401).send();
     }
@@ -45,7 +43,7 @@ exports.updateMonitor = async (req, res) => {
 }
 
 exports.deleteMonitor = async (req, res) => {
-    const isUserOwner = await isOwner(req);
+    const isUserOwner = await isOwner(req.user, req.params.id);
     if (isUserOwner === false) {
         return res.status(401).send();
     }
@@ -60,19 +58,44 @@ exports.deleteMonitor = async (req, res) => {
 }
 
 exports.getReport = async (req, res) => {
-    const isUserOwner = await isOwner(req);
-    if (isUserOwner === false) {
-        return res.status(401).send();
+    // Handle getting monitor reports by tag
+    if (req.query.tag) {
+        let monitors;
+        try {
+            monitors = await Monitor.find({tag: req.query.tag});
+            let reports = [];
+            monitors.forEach((monitor) => {
+                reports.push(createReport(monitor));
+            })
+
+            res.status(200).send(reports);
+        }
+        catch (err) {
+            res.status(400).send(err);
+        }
     }
+    // Handle getting report for certain monitor
+    else {
+        console.log('2');
+        const isUserOwner = await isOwner(req.user, req.query.id);
+        if (isUserOwner === false) {
+            return res.status(401).send();
+        }
+
+        let monitor;
+        try {
+            monitor = await Monitor.findOne({_id: req.query.id});
+        }
+        catch (err) {
+            return res.status(400).send(err);
+        }
     
-    let monitor;
-    try {
-        monitor = await Monitor.findOne({_id: req.params.id});
+        const report = createReport(monitor);
+        res.status(200).send(report);
     }
-    catch (err) {
-        return res.status(400).send(err);
-    }
-    
+}
+
+function createReport(monitor) {
     const report = {
         status: monitor.status,
         availability: (monitor.upTime / (monitor.upTime + monitor.downTime)) * 100,
@@ -82,17 +105,17 @@ exports.getReport = async (req, res) => {
         responseTime: monitor.averageResponseTime,
         history: monitor.backlog
     }
-    
-    res.status(200).send(report);
+
+    return report;
 }
 
-async function isOwner(req) {
+async function isOwner(user, monitorId) {
     return new Promise(resolve => {
-        Monitor.findOne({_id: req.params.id}, (err, monitor) => {
+        Monitor.findOne({_id: monitorId}, (err, monitor) => {
             if (err) {
                 resolve(true);
             }
-            else if (monitor.owner.toString() === req.user.id) {
+            else if (monitor.owner.toString() === user.id) {
                 resolve(true);
             }
             else {

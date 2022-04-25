@@ -2,6 +2,7 @@ const cron = require('node-cron');
 const axios = require('axios');
 const http = require('http');
 const https = require('https');
+const Net = require('net');
 const nodemailer = require('nodemailer');
 const Monitor = require('../models/monitors');
 const User = require('../models/users');
@@ -23,10 +24,20 @@ exports.handleRequest = async (id) => {
     }
 
     // Make new request
-    const request = await this.sendRequest(monitor);
+    const request = await sendRequest(monitor);
+
+    // Alert user if failure threshold met or url goes up
+    if (request.urlState === 'up' && monitor.state === 'down') {
+        const user = await User.findOne({_id: monitor.owner});
+        sendEmail(user.email, `Your url of monitor id ${monitor._id} is up again!`);
+    }
+    else if (monitor.outages === monitor.alertsThreshold) {
+        const user = await User.findOne({_id: monitor.owner});
+        sendEmail(user.email, `Your url of monitor id ${monitor._id} is down!`);
+    }
 
     // Update outages, backlog, state, avg reponse time
-    if (request.urlState == 'up') {
+    if (request.urlState === 'up') {
         monitor.state = 'up';
     }
     else {
@@ -44,15 +55,9 @@ exports.handleRequest = async (id) => {
     cron.schedule(dateToCron(reqTime), () => {
         this.handleRequest(monitor._id);
     })
-
-    // Alert user if threshold exceeded
-    if (monitor.outages >= monitor.alertsThreshold) {
-        const user = await User.findOne({_id: monitor.owner});
-        sendEmail('ahmad.hussain.307@gmail.com', `Your url monitor of id ${monitor._id} is down`);
-    }
 }
 
-exports.sendRequest = async (monitor) => {
+async function sendRequest(monitor) {
     let success, status, responseTime;
     try {
         // Set interceptor to measure request time
