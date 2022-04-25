@@ -12,6 +12,7 @@ const bodyParser = require('body-parser');
 const passport = require('passport');
 const LocalStrategy = require('passport-local');
 const passportLocalMongoose = require('passport-local-mongoose');
+const MongoStore = require('connect-mongo');
 const userModel = require('./models/users');
 const userController = require('./controllers/users');
 const port = 3000;
@@ -29,6 +30,7 @@ app.use(session({
     secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: true,
+    store: MongoStore.create({mongoUrl: process.env.DB_URL}),
 }));
 app.use(passport.initialize());
 app.use(passport.session());
@@ -51,7 +53,6 @@ app.get('/', (req, res) => {
     else {
         res.send('Welcome to Url Monitor');
     }
-    
 });
 app.use('/users', usersRouter);
 app.use('/monitors', userController.isLoggedIn, monitorsRouter);
