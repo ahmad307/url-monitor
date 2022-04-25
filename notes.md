@@ -15,3 +15,7 @@
 2- Upon user updating a monitor interval a url request should be made if the new interval is smaller than the previous. Previous scheduled request should also be cancelled if possible.
 
 3- Tcp requests.
+
+4- Stateless authentication.
+
+5- Signup email verification
