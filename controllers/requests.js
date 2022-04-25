@@ -21,15 +21,18 @@ exports.handleRequest = async (id) => {
     }
 
     // Make new request
-    const request = await this.makeRequest(monitor);
+    const request = await this.sendRequest(monitor);
 
-    // Update outages, backlog, state
+    // Update outages, backlog, state, avg reponse time
     if (request.urlState == 'up') {
         monitor.state = 'up';
     }
     else {
         monitor.state = 'down';
         monitor.outages = monitor.outages + 1;
+    }
+    if (request.responseTime) {
+        monitor.averageResponseTime = (monitor.averageResponseTime + request.responseTime) / 2;
     }
     monitor.backlog.push(request);
     monitor.save();
@@ -40,12 +43,25 @@ exports.handleRequest = async (id) => {
         this.handleRequest(monitor._id);
     })
 
-    // Alert user if threshold exceeded
+    // TODO: Alert user if threshold exceeded
 }
 
-exports.makeRequest = async (monitor) => {
-    let success, status, response;
+exports.sendRequest = async (monitor) => {
+    let success, status, responseTime;
     try {
+        // Set interceptor to measure request time
+        axios.interceptors.request.use((config) => {
+            config.headers['request-startTime'] = new Date().getTime();
+            return config
+        })
+        axios.interceptors.response.use((response) => {
+            const currentTime = new Date().getTime()      
+            const startTime = response.config.headers['request-startTime']      
+            response.headers['request-duration'] = currentTime - startTime      
+            return response
+        })
+
+        // Set request config and headers
         const config = {
             timeout: monitor.timeout * 1000,  // Convert timeout to milliseonds
             headers: monitor.headers,
@@ -59,16 +75,16 @@ exports.makeRequest = async (monitor) => {
                 config.httpsAgent = new https.Agent({rejectUnauthorized: false});
             }
         }
+        const response = await axios.get(monitor.url, {}, config);
 
-        response = await axios.get(monitor.url, {}, config);
         // Handle successful requests
         success = true;
         status = response.status;
+        responseTime = response.headers['request-duration'] / 1000;
     }
     catch (err) {
         err = err.toJSON();
         success = false;
-        response = err;
         
         // Handle url not found
         if (err.status === null) {
@@ -80,9 +96,11 @@ exports.makeRequest = async (monitor) => {
         }
     }
 
-    const request = {
-        status: response.status
-    };
+    const request = {status: status};
+    if (responseTime) {
+        request.responseTime = responseTime;
+    }
+
     if (monitor.assertionStatus === status || (monitor.assertionStatus === undefined && success)) {
         request.urlState = 'up';
     }

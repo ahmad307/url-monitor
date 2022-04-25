@@ -24,6 +24,9 @@ const requestSchema = mongoose.Schema({
             values: ['up', 'down']
         },
         required: true
+    },
+    responseTime: {
+        type: Number
     }
 })
 
@@ -60,6 +63,9 @@ const monitorSchema = mongoose.Schema({
         // Saved in seconds
         type: Number,
         default: 0
+    },
+    averageResponseTime: {
+        type: Number
     },
     creationDate: {
         type: Date,
