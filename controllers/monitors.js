@@ -1,4 +1,5 @@
 const Monitor = require('../models/monitors')
+const requestsController = require('../controllers/requests');
 
 exports.getMonitor = async (req, res) => {
     const isUserOwner = await isOwner(req.user, req.params.id);
@@ -22,6 +23,8 @@ exports.addMonitor = (req, res) => {
             return res.status(400).send(err);
         }
         else {
+            // Make first monitor request
+            requestsController.handleRequest(monitor._id);
             return res.status(201).send(newMonitor);
         }
     })
@@ -76,7 +79,6 @@ exports.getReport = async (req, res) => {
     }
     // Handle getting report for certain monitor
     else {
-        console.log('2');
         const isUserOwner = await isOwner(req.user, req.query.id);
         if (isUserOwner === false) {
             return res.status(401).send();

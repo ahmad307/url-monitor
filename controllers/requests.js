@@ -2,7 +2,6 @@ const cron = require('node-cron');
 const axios = require('axios');
 const http = require('http');
 const https = require('https');
-const Net = require('net');
 const nodemailer = require('nodemailer');
 const Monitor = require('../models/monitors');
 const User = require('../models/users');
@@ -28,12 +27,10 @@ exports.handleRequest = async (id) => {
 
     // Alert user if failure threshold met or url goes up
     if (request.urlState === 'up' && monitor.state === 'down') {
-        const user = await User.findOne({_id: monitor.owner});
-        sendEmail(user.email, `Your url of monitor id ${monitor._id} is up again!`);
+        await notify(monitor.owner, `Your url of monitor id ${monitor._id} is up again!`);
     }
     else if (monitor.outages === monitor.alertsThreshold) {
-        const user = await User.findOne({_id: monitor.owner});
-        sendEmail(user.email, `Your url of monitor id ${monitor._id} is down!`);
+        await notify(monitor.owner, `Your url of monitor id ${monitor._id} is down!`);
     }
 
     // Update outages, backlog, state, avg reponse time
@@ -134,6 +131,11 @@ function dateToCron(date) {
 
     return `${seconds} ${minutes} ${hours} ${days} ${months} ${dayOfWeek} ${year}`;
 };
+
+async function notify(userId, message) {
+    const user = await User.findOne({_id: userId});
+    sendEmail(user.email, message);
+}
 
 function sendEmail(email, body) {
     var transporter = nodemailer.createTransport({
