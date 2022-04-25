@@ -9,6 +9,24 @@ const authSchema = mongoose.Schema({
     }
 })
 
+const requestSchema = mongoose.Schema({
+    date: {
+        type: Date,
+        default: Date.now
+    },
+    status: {
+        type: Number,
+        required: true
+    },
+    urlState: {
+        type: String,
+        enum: {
+            values: ['up', 'down']
+        },
+        required: true
+    }
+})
+
 const monitorSchema = mongoose.Schema({
     owner: {
         type: mongoose.Schema.Types.ObjectId,
@@ -31,10 +49,7 @@ const monitorSchema = mongoose.Schema({
             message: 'Unsupported protocol'
         }
     },
-    backlog: [{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Request'
-    }],
+    backlog: [requestSchema],
     // Optional
     upTime: {
         // Saved in seconds

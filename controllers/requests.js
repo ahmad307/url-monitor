@@ -3,7 +3,6 @@ const axios = require('axios');
 const http = require('http');
 const https = require('https');
 const Monitor = require('../models/monitors');
-const Request = require('../models/requests');
 
 exports.callMakeRequest = async (req, res) => {
     await this.handleRequest(req.query.id);
@@ -32,7 +31,7 @@ exports.handleRequest = async (id) => {
         monitor.state = 'down';
         monitor.outages = monitor.outages + 1;
     }
-    monitor.backlog.push(request._id);
+    monitor.backlog.push(request);
     monitor.save();
 
     // Schedule next request
@@ -81,17 +80,16 @@ exports.makeRequest = async (monitor) => {
         }
     }
 
-    const request = new Request();
+    const request = {
+        status: response.status
+    };
     if (monitor.assertionStatus === status || (monitor.assertionStatus === undefined && success)) {
         request.urlState = 'up';
     }
     else {
         request.urlState = 'down';
     }
-
-    request.httpStatus = response.status;
-    request.response = response;
-    request.save();
+    
     return request;
 }
 
