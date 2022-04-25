@@ -15,7 +15,7 @@ exports.addUser = (req, res) => {
         }
         else {
             passport.authenticate("local");
-            res.status(200).send(`User ${newUser.name} added`);
+            res.status(201).send(`User ${newUser.name} added`);
         }
     })
 }

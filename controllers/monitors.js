@@ -13,7 +13,7 @@ exports.getMonitor = async (req, res) => {
         res.send(monitor);
     } 
     catch (err) {
-        res.status(400).send();
+        res.status(400).send(err);
     }
 }
 
@@ -24,7 +24,7 @@ exports.addMonitor = (req, res) => {
             return res.status(400).send(err);
         }
         else {
-            return res.status(200).send(newMonitor);
+            return res.status(201).send(newMonitor);
         }
     })
 }
@@ -57,6 +57,33 @@ exports.deleteMonitor = async (req, res) => {
             res.status(204).send();
         }
     })
+}
+
+exports.getReport = async (req, res) => {
+    const isUserOwner = await isOwner(req);
+    if (isUserOwner === false) {
+        return res.status(401).send();
+    }
+    
+    let monitor;
+    try {
+        monitor = await Monitor.findOne({_id: req.params.id});
+    }
+    catch (err) {
+        return res.status(400).send(err);
+    }
+    
+    const report = {
+        status: monitor.status,
+        availability: (monitor.upTime / (monitor.upTime + monitor.downTime)) * 100,
+        outages: monitor.outages,
+        downtime: monitor.downTime,
+        uptime: monitor.upTime,
+        responseTime: monitor.averageResponseTime,
+        history: monitor.backlog
+    }
+    
+    res.status(200).send(report);
 }
 
 async function isOwner(req) {

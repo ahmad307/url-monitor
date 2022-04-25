@@ -65,7 +65,8 @@ const monitorSchema = mongoose.Schema({
         default: 0
     },
     averageResponseTime: {
-        type: Number
+        type: Number,
+        default: 0
     },
     creationDate: {
         type: Date,
