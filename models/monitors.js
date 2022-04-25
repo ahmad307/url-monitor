@@ -1,5 +1,14 @@
 const mongoose = require('mongoose');
 
+const authSchema = mongoose.Schema({
+    username: {
+        type: String
+    },
+    password: {
+        type: String
+    }
+})
+
 const monitorSchema = mongoose.Schema({
     owner: {
         type: mongoose.Schema.Types.ObjectId,
@@ -76,6 +85,18 @@ const monitorSchema = mongoose.Schema({
     tag: {
         type: String,
     },
+    authHeader: {
+        type: authSchema
+    },
+    headers: {
+        type: Object
+    },
+    assertionStatus: {
+        type: Number
+    },
+    ignoreSSL: {
+        type: Boolean
+    }
 })
 
 monitorSchema.path('url').validate((val) => {

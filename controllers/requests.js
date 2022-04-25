@@ -1,5 +1,7 @@
 const cron = require('node-cron');
 const axios = require('axios');
+const http = require('http');
+const https = require('https');
 const Monitor = require('../models/monitors');
 const Request = require('../models/requests');
 
@@ -43,33 +45,52 @@ exports.handleRequest = async (id) => {
 }
 
 exports.makeRequest = async (monitor) => {
-    const request = new Request();
+    let success, status, response;
     try {
         const config = {
-            timeout: monitor.timeout * 1000  // Convert timeout to milliseonds
+            timeout: monitor.timeout * 1000,  // Convert timeout to milliseonds
+            headers: monitor.headers,
+            auth: monitor.authHeader
         }
-        const response = await axios.get(monitor.url, {}, config);
-        
+        if (monitor.ignoreSSL === true) {
+            if (monitor.port === 'http') {
+                config.httpAgent = new http.Agent({rejectUnauthorized: false});
+            }
+            else if (monitor.port === 'https') {
+                config.httpsAgent = new https.Agent({rejectUnauthorized: false});
+            }
+        }
+
+        response = await axios.get(monitor.url, {}, config);
         // Handle successful requests
-        request.httpStatus = response.status;
-        request.urlState = 'up';
-        request.response = response;
+        success = true;
+        status = response.status;
     }
     catch (err) {
         err = err.toJSON();
+        success = false;
+        response = err;
+        
         // Handle url not found
         if (err.status === null) {
-            request.httpStatus = 404;
-            request.urlState = 'down';
+            status = 404;
         }
         // Handle successful request but url down
         else {
-            request.httpStatus = err.status;
-            request.urlState = 'down';
-            request.response = err;
+            status = err.status;
         }
     }
 
+    const request = new Request();
+    if (monitor.assertionStatus === status || (monitor.assertionStatus === undefined && success)) {
+        request.urlState = 'up';
+    }
+    else {
+        request.urlState = 'down';
+    }
+
+    request.httpStatus = response.status;
+    request.response = response;
     request.save();
     return request;
 }
