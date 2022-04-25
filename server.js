@@ -56,7 +56,6 @@ app.get('/', (req, res) => {
 });
 app.use('/users', usersRouter);
 app.use('/monitors', userController.isLoggedIn, monitorsRouter);
-app.post('/req', require('./controllers/requests').callMakeRequest);
 
 app.listen(port, () => {
     console.log(`Listening on port ${port}`)

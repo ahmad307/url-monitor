@@ -6,11 +6,6 @@ const nodemailer = require('nodemailer');
 const Monitor = require('../models/monitors');
 const User = require('../models/users');
 
-exports.callMakeRequest = async (req, res) => {
-    await this.handleRequest(req.query.id);
-    res.send();
-}
-
 exports.handleRequest = async (id) => {
     const monitor = await Monitor.findOne({_id: id});
 
