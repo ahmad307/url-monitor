@@ -114,14 +114,11 @@ function createReport(monitor) {
 async function isOwner(user, monitorId) {
     return new Promise(resolve => {
         Monitor.findOne({_id: monitorId}, (err, monitor) => {
-            if (err) {
-                resolve(true);
-            }
-            else if (monitor.owner.toString() === user.id) {
-                resolve(true);
+            if (err || monitor.owner.toString() !== user.id) {
+                resolve(false);
             }
             else {
-                resolve(false);
+                resolve(true);
             }
         })
     })
